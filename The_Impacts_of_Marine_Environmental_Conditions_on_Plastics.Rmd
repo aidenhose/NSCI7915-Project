@@ -1,0 +1,202 @@
+---
+title: "The Impacts of Marine Environmental Conditions on Plastics"
+author: "Aiden Hose"
+output:
+  pdf_document: default
+---
+
+**Abstract**
+
+This project, how marine environmental conditions effect plastic abundance and length, looked to determine whether there was a statistically significant relationship between plastic abundance and length and marine environmental variables. This project used a dataset from a 2013 paper from Julia Reisser and her team which analysed plastics found around the Australia coast and was published online. Data analysis was performed using Pearson’s Correlation Coefficient Test for plastic abundance and Linear Mixed-Effect Models for the plastic length to determine whether there was a statistically significant relationship between these plastic variables and the marine environmental variables. The results of this study showed that there was no significant relationship between any of the marine environmental variables (sea temperature, depth, and salinity) and plastic abundance and length. Neither of the null hypothesis was rejected for this project due to the results and further studies should focus on more chemically based plastic variables or different environmental variables.
+
+
+**Introduction**
+
+Plastic pollution is one of the greatest problems facing marine ecosystems and environments today, and with an increase of global plastic production from 1,700,000 tons in 1950 to 280,000,000 tons in 2011 (Schmaltz et al. 2020 & Tibbetts 2015), it is obvious it is more important now than ever to stop plastics from getting into the ocean. Plastics in the ocean have been directly linked to the decline and death of multiple marine species, most noticeable sea turtles and seabirds, and impact around 700 unique species (Almroth  & Eggert 2020). Plastics have been directly linked to the death of multiple marine species due to them getting trapped in the plastics or choking on them if ingested thinking they are prey (Kurniawan et al. 2021). 
+
+Plastics are often removed from the marine environment through the use of nets dragged behind boating vessels. The nets will collect all the plastics in the path that don’t flow through the small gaps in the netting. This form of marine environmental cleaning can be successful as mass amounts of plastic can be removed from the ocean if the boats move through areas of high plastic population (Schmaltz et al. 2020). However, if it was true that the environmental conditions of the ocean impact the size and abundance of plastics, it would be possible to focus in on a smaller area that has these stats and then clean more plastic for the same extension of energy, money and time. 
+
+This project aimed to determine whether there is a statistically significant relationship between the abundance and length of plastics and the marine environmental conditions of sea temperature, depth, and salinity. The biological hypothesis that is being tested are as follows:
+
+1.	The lower the sea temperature, the higher the abundance of plastics will be found, and the size of plastics will increase.
+
+2.	The lower the depth, the higher the abundance of plastics will be found, and the size of plastics will increase.
+
+3.	The higher the salinity, the higher the abundance of plastics will be found, and the size of plastics will increase.
+
+These hypothesis have been stated due to the fact that as the deeper you go in the ocean, the higher the salinity goes and the lower the temperature goes on average. This is due to the immense pressure further underwater, and the suns heat not being able to reach as far down (Vince & Hardesty 2017). The majority of plastics that are found in the marine environment have a higher density than that of ocean water and will sink. While commonly recognisable items such as plastic bags and straws will often be found at the ocean surface due to low density levels, plastics also include plastic bottles which fill with water and sink and plastic film such as PVC which has a higher density than the plastic bags (Tibbetts 2015).
+
+
+**Methods**
+
+The dataset for this project was downloaded from the DataDryad website and was generated as a part of the study by Julia Reisser and her team in 2013 titled marine plastic pollution in waters around Australia: characteristics, concentrations, and pathways (Reisser et al. 2013). The study went on several voyages around the coast of Australia and took three consecutive 15-minute net tows at 57 unique locations. Each of these tows also took an analysis of the waters, taking a measurement for sea temperature, salinity, and depth of the net. After each tow, the contents were analysed for plastics which were then counted, measured, classified, and catalogued. In total 839 unique plastics, ranging from 0.4mm to 82.6mm, were recorded as a part of this project. 
+
+For this project, we looked to determine whether there was a relationship between marine environmental variables of sea temperature, salinity and depth and the count and length of plastics. The dependant variables for this project are the plastic abundance count (measured as the count of plastic per tow at each location) and plastic length (measured in millimetres). The independent variables for this project are the marine environmental variables of sea temperature (measured in degrees Celsius), salinity (measured in PSU), and depth (measured in metres). For this project the plastics abundance count and plastics length had to be log transformed to obtain a normal distribution, while no transformations were made to the marine environmental variables. 
+
+This project used Pearson’s Correlation Coefficient Test to determine whether there was a significant relationship between plastic abundance and environmental variables and a Linear Mixed-Effect Model was used to determine whether there was a significant relationship between plastic length and environmental variables. 
+
+The Pearson’s Correlation Test is a measure of the linear correlation between two sets of data. The Pearson’s Correlation test states that the data must be continuous in scale, have a linear relationship between variables and be normally distributed. The statistical null hypothesis states that there is no statistically significant relationship between the abundance of plastics and marine environmental variables (sea temperature, salinity, and depth).
+
+The Linear Mixed-Effect Model is used as an extension of linear models when there is fixed and random effects in the dataset. The Linear Mixed-Effect Model states that the data must be linearly related, constant in variance and be normally distributed. The statistical null hypothesis states that there is no statistically significant relationship between the length of plastics and marine environmental variables (sea temperature, salinity, and depth).
+
+All statistical analyses were performed using the software package R version 4.1.1(R Development Core Team 2015).
+```{r}
+library(readr)
+library(ggpubr)
+library(tidyverse)
+library(lme4)
+```
+
+**Results**
+
+*Assumptions*
+
+```{r}
+nettows_info <- read_csv("data/nettows_info.csv")
+plastics_info <- read_csv("data/plastics_info.csv")
+
+plastics_abund <- count(plastics_info, NetStation)
+
+avtemp <- nettows_info %>% 
+  group_by(NetStation) %>%
+  summarize(averaged.ST = mean(SeaTemperature)) 
+
+avdepth <- nettows_info %>% 
+  group_by(NetStation) %>%
+  summarize(averaged.depth = mean(Depth)) 
+
+avsalinity <- nettows_info %>% 
+  group_by(NetStation) %>%
+  summarize(averaged.sal = mean(Salinity)) 
+
+list <- list(plastics_abund, avtemp, avdepth, avsalinity)      
+abundancedata <- Reduce(function(x, y) merge(x, y, all=TRUE), list) 
+abundancedata$logn <- log(abundancedata$n)
+
+```
+
+```{r}
+head(abundancedata, 5)
+summary(abundancedata)
+```
+
+```{r}
+shapiro.test(residuals(lm(logn~averaged.ST,abundancedata))) 
+shapiro.test(residuals(lm(logn~averaged.depth,abundancedata))) 
+shapiro.test(residuals(lm(logn~averaged.sal,abundancedata)))
+```
+
+```{r}
+#Scatter plot of plastic abundance and average sea temperature
+ggscatter(abundancedata, x = "averaged.ST", y = "n", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          title = "Plastic Abundance vs Sea Temperature", 
+          xlab = "average sea temperature (degrees Celcius)", ylab = "plastic abundance")
+
+#Scatter plot of plastic abundance and average depth
+ggscatter(abundancedata, x = "averaged.depth", y = "n", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          title = "Plastic Abundance vs Sea Depth", 
+          xlab = "average depth (m)", ylab = "plastic abundance")
+
+#Scatter plot of plastic abundance and average salinity
+ggscatter(abundancedata, x = "averaged.sal", y = "n", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          title = "Plastic Abundance vs Sea Salinity", 
+          xlab = "average salinity (PSU)", ylab = "plastic abundance")
+```
+
+From the above plots and Shapiro-Wilks Tests we can say that the data is continous, linear in nature and normally distributed. Therefore, all of the assumptions for the Pearson’s Correlation Coefficient Test have been fulfilled and we can use the test to analyse the relationship between plastic abundnace and marine environmental variables. 
+
+```{r}
+temperature_pearson <- cor.test(abundancedata$logn, abundancedata$averaged.ST, 
+                                method = "pearson")
+depth_pearson <- cor.test(abundancedata$logn, abundancedata$averaged.depth, 
+                                method = "pearson")
+salinity_pearson <- cor.test(abundancedata$logn, abundancedata$averaged.sal, 
+                                method = "pearson")
+temperature_pearson
+depth_pearson 
+salinity_pearson
+```
+
+This is the results for the Pearson’s Correlation Coefficient Test testing for a statistically significant relationship between plastic abundance and the marine environmental variables of sea temperature, depth and salinity. The results state:
+
+Plastic abundance and sea temperature do not have a significant relationship (r = 0.1086, df = 44, p = 0.2963).
+
+Plastic abundance and depth do not have a significant relationship (r = -0.1657, df = 51, p = 0.08502). 
+
+Plastic abundance and salinity do not have a significant relationship (r = -0.06806, df = 44, p = 0.5124).
+
+All p-values obtained are greater than the significance level 0.05. 
+
+Therefore, the null hypothesis is not rejected. 
+
+Therefore, we can determine that there is no statistically significant relationship between plastics abundance and environmental conditions (sea temperature, depth, and salinity)
+
+
+```{r}
+lengthdata <- merge(plastics_info,nettows_info)
+lengthdata$log.length <- log(plastics_info$Length)
+mST <- lmer(log.length ~ SeaTemperature +  (1|NetStation/Replicate),lengthdata)
+mdepth <- lmer(log.length ~ Depth +  (1|NetStation/Replicate),lengthdata)
+msalinity <- lmer(log.length ~ Salinity +  (1|NetStation/Replicate),lengthdata)
+plot(mST)
+plot(mdepth)
+plot(msalinity)
+```
+
+```{r}
+summary(mST)
+summary(mdepth)
+summary(msalinity)
+```
+
+This is the results for the Linear Mixed-Effect Model testing for a statistically significant relationship between plastic length and the marine environmental variables of sea temperature, depth and salinity. The results state:
+
+Plastic length and sea temperature do not have a significant relationship (t = -1.521, df = 30, p = 0.139).
+
+Plastic length and depth do not have a significant relationship (t = 0.088, df = 59, p = 0.93).
+
+Plastic length and salinity do not have a significant relationship (t = -0.133, df = 36, p = 0.895).
+
+All p-values obtained are greater than the significance level 0.05. 
+
+Therefore, the null hypothesis is not rejected. 
+
+Therefore, we can determine that there is no statistically significant relationship between plastics length and environmental conditions (sea temperature, depth, and salinity)
+
+**Discussion**
+
+The results of this study all show that there is no statistically significant evidence that there is a relationship between marine environmental variables and plastic abundance and length. The null hypothesis could not be rejected for any of the statistical analysis that was partaken in this project and subsequent findings published in this report. This contradicts the hypothesised findings made at the start of this report that stated that as depth and sea temperature decreased, and salinity increased the abundance and size of plastics will increase as well. This could be due to the type of plastics that are most found in the areas that were studied around Australia at the time of the project back in 2013 or could be due to the mesh sizes that were used. 
+
+This study was performed using data taken from the 2013 study by Julia Reisser and her team. The sites analysed were along the coast of Australia ranging from Western Australia and South Australia up to Queensland and New South Wales as well as some sites studied above New Zealand. This shows that the results of this project can only be applied to the marine environments that have been studied as a part of this dataset. The project only studied the abundance and length of plastics and not the plastic typing (i.e. soft and hard plastics) and the polymer type (i.e. polypropylene and polyethylene). 
+
+The main limitation of this study is the low level of data that was collected and the small range of environmental variables that came because of this. Only 57 unique locations were analysed with a total of three repeats each. Ina perfect world more locations would be studied, and more repeats would be undertaken in order to make the data more accurate and reliable to the actual picture of the environment. The range of the environmental variables that were collected is also rather small in some cases and large in others. For example, the range of depth analysed ranges from along the ocean surface to almost 6000 metres down. In comparison to this massive range with only a small number of study locations, the salinity of the water ranges from 34 to 36 PSU, which is small in salinity comparisons. 
+
+For future endeavours which investigate similar topics that have only been broached in this project and report, it is suggested that the looking into whether the marine environmental variables used in this study have any relationship with other plastic variables. This could include variables such as the weighting of the plastic, density of the plastic, polymer type and plastic type. These could prove to show more fruitful and statistically significant results as they relate more to the chemical makeup of the plastics in comparison to the abundance and length which are plastic measurements. Another area of study that could result from this project is other marine environmental variables such as current speed and direction, biodiversity of the area or even the main commercial uses of the marine area.
+
+**Acknowledgments**
+
+We would like to acknowledge Drew Allen for his assistance in the coding aspect of this project and all help provided throughout the project. This project would not have been completed without his invaluable input and assistance.
+
+**References**
+
+Almroth BC, Eggert H. Marine plastic pollution: sources, impacts, and policy issues. Review of environmental economics and policy. 2020 Sep 29.
+
+Kurniawan SB, Abdullah SR, Imron MF, Ismail NI. Current state of marine plastic pollution and its technology for more eminent evidence: A review. Journal of Cleaner Production. 2021 Jan 1;278:123537.
+
+Reisser, J., Shaw, J., Wilcox, C., Hardesty, B.D., Proietti, M., Thums, M. and Pattiaratchi, C., 2013. Marine plastic pollution in waters around Australia: characteristics, concentrations, and pathways. PloS one, 8(11), p.e80466.
+
+Schmaltz E, Melvin EC, Diana Z, Gunady EF, Rittschof D, Somarelli JA, Virdin J, Dunphy-Daly MM. Plastic pollution solutions: emerging technologies to prevent and collect marine plastic pollution. Environment international. 2020 Nov 1;144:106067.
+
+Tibbetts JH. Managing marine plastic pollution: policy initiatives to address wayward waste. 2015
+
+Vince J, Hardesty BD. Plastic pollution challenges in marine and coastal environments: from local to global governance. Restoration ecology. 2017 Jan;25(1):123-8.
+
+
+R Core Team (2019). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. URL https://www.R-project.org/.
+

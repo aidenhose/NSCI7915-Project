@@ -66,8 +66,8 @@ head(data, 5)
 
 #We also will test for normality of the datasets
 ```{r}
-shapiro.test(data$n)
-shapiro.test(data$averaged.ST)
+table(shapiro.test(data$n))
+table(shapiro.test(data$averaged.ST))
 shapiro.test(data$averaged.depth)
 shapiro.test(data$averaged.sal)
 ```
@@ -82,21 +82,21 @@ ggscatter(data, x = "averaged.ST", y = "n",
           add = "reg.line", conf.int = TRUE, 
           cor.coef = TRUE, cor.method = "kendall",
           title = "Plastic Abundance vs Sea Temperature", 
-          xlab = "average sea temperature", ylab = "plastic abundance")
+          xlab = "average sea temperature (degrees Celcius)", ylab = "plastic abundance")
 
 #Scatter plot of plastic abundance and average depth
 ggscatter(data, x = "averaged.depth", y = "n", 
           add = "reg.line", conf.int = TRUE, 
           cor.coef = TRUE, cor.method = "kendall",
           title = "Plastic Abundance vs Sea Depth", 
-          xlab = "average depth", ylab = "plastic abundance")
+          xlab = "average depth (m)", ylab = "plastic abundance")
 
 #Scatter plot of plastic abundance and average salinity
 ggscatter(data, x = "averaged.sal", y = "n", 
           add = "reg.line", conf.int = TRUE, 
           cor.coef = TRUE, cor.method = "kendall",
           title = "Plastic Abundance vs Sea Salinity", 
-          xlab = "average salinity", ylab = "plastic abundance")
+          xlab = "average salinity (PSU)", ylab = "plastic abundance")
 
 ```
 
@@ -120,12 +120,42 @@ depth_kendall
 #tau = -0.1657, p = 0.08502
 salinity_kendall
 #tau = -0.06806, p = 0.5124
+a <- list (temperature_kendall, depth_kendall) 
 ```
 
 #Plastic abundance and sea temperature do not have a sgignificant relationship (tau = 0.1086, p = 0.2963)
 #Plastic abundance and depth do not have a sgignificant relationship (tau = -0.1657, p = 0.08502)
-#Plastic abundance and salinity do not have a sgignificant relationship (tau = -0.06806, p = 0.5124)
+#Plastic abundance and salinity do not have a sgignificant relationship ($\tau$ = -0.06806, p = 0.5124)
 #All p-values obtained are greater than the significance level 0.05.
 #Therefore, the null hypothesis is not rejected.
 #Therefore, we can determine that there is no statistically significant relationship between plastics abundance and environmental conditions (sea temperature, depth and salinity)
+
+```{r}
+shapiro.test(residuals(lm(log(n)~averaged.ST,data))) 
+shapiro.test(residuals(lm(log(n)~averaged.depth,data))) 
+shapiro.test(residuals(lm(log(n)~averaged.sal,data)))
+```
+
+
+```{r}
+temperature_pearson <- cor.test(data$logn, data$averaged.ST, 
+                                method = "pearson")
+depth_pearson <- cor.test(data$logn, data$averaged.depth, 
+                                method = "pearson")
+salinity_pearson <- cor.test(data$logn, data$averaged.sal, 
+                                method = "pearson")
+```
+
+```{r}
+temperature_pearson 
+depth_pearson 
+salinity_pearson
+```
+
+```{r}
+shapiro.test(residuals(lm(log.length~SeaTemperature,data)))
+shapiro.test(residuals(lm(log.length~Depth,data)))
+shapiro.test(residuals(lmer(log.length ~ Depth +  (1|NetStation/Replicate),data)))
+shapiro.test(data$log.length)
+```
 

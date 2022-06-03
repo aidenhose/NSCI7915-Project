@@ -29,6 +29,9 @@ plastics_info <- read_csv("data/plastics_info.csv")
 #We want to create a new dataset containing only the data we need and take the average from the three replicates of each site.
 #We want to take the total plastic abunance at each site and the average sea temperature, depth and salinity at each site.
 plastics_abund <- count(plastics_info, NetStation)
+plastics_abund <- aggregate(Length~NetStation+Replicate,data=plastics_info,FUN=length)
+
+data <- merge(plastics_abund,nettows_info)
 
 avtemp <- nettows_info %>% 
   group_by(NetStation) %>%
@@ -53,10 +56,11 @@ head(data, 5)
 #All of the data is measured on a continuous scale 
 
 #We also will test for normality of the datasets
-shapiro.test(data$n)
+shapiro.test(data$Length)
 shapiro.test(data$averaged.ST)
 shapiro.test(data$averaged.depth)
 shapiro.test(data$averaged.sal)
+hist(data$Length)
 
 #From the output, the four p-values are less than the significance level 0.05 implying that the distribution of the data are significantly different from normal distribution. 
 #In other words, we can assume the data is NOT normally distributed.
@@ -80,7 +84,6 @@ ggscatter(data, x = "averaged.sal", y = "n",
           cor.coef = TRUE, cor.method = "kendall",
           xlab = "average salinity", ylab = "plastic abundance")
 
-qqnorm(data$averaged.ST, ylab = "average temperature")
 
 #From the above plots we can see that the above plots are linear and monotonic in relationship.
 
@@ -120,3 +123,24 @@ salinity_pearson <- cor.test(data$logn, data$averaged.sal,
                                 method = "pearson")
 
 
+lengthdata <- merge(plastics_info,nettows_info)
+lengthdata$log.length <- log(plastics_info$Length)
+mST <- lmer(log.length ~ SeaTemperature +  (1|NetStation/Replicate),lengthdata)
+mdepth <- lmer(log.length ~ Depth +  (1|NetStation/Replicate),lengthdata)
+msalinity <- lmer(log.length ~ Salinity +  (1|NetStation/Replicate),lengthdata)
+plot(msalinity)
+summary(mST)
+summary(mdepth)
+summary(msalinity)
+
+hist(lengthdata$log.length)
+hist(data$Length)
+
+help(lmer)
+
+R.Version()
+          
+lst(shapiro.test) %>% 
+  map_df(~ data  %>% 
+           summarise_all(list(~ list(.x(.)[c("statistic", "p.value")]))) %>% 
+            .id = "test")
